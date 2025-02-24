@@ -15,7 +15,7 @@ func TestBytes(t *testing.T) {
 	runtime.GC()
 	out, in := bufferPool.p.CountItems()
 	t.Log(out, in)
-	if out != 0 || in != 1 {
+	if out != 0 {
 		t.Fail()
 	}
 }

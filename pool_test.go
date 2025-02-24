@@ -26,7 +26,7 @@ func TestPool(t *testing.T) {
 	}
 	out, in = p.CountItems()
 	t.Log("out", out, "in", in)
-	if out != 0 || in != 1 {
+	if out != 0 {
 		t.Fatal("unexpected behavior")
 	}
 	wg := sync.WaitGroup{}

@@ -27,14 +27,14 @@ func BufferItemToBytes(buf *orbyte.Item[bytes.Buffer]) Bytes {
 func (bufferPool BufferPool) NewBytes(sz int) Bytes {
 	buf := bufferPool.p.New(sz)
 	x := buf.Unwrap()
-	return Bytes{buf: buf, dat: x.Bytes()}
+	return Bytes{buf: buf, dat: x.Bytes()[:sz]}
 }
 
 // InvolveBytes involve outside buf into pool.
 func (bufferPool BufferPool) InvolveBytes(b ...byte) Bytes {
 	buf := bufferPool.p.Involve(len(b), bytes.NewBuffer(b))
 	x := buf.Unwrap()
-	return Bytes{buf: buf, dat: x.Bytes()}
+	return Bytes{buf: buf, dat: x.Bytes()[:len(b)]}
 }
 
 // ParseBytes convert outside bytes to Bytes safely
@@ -42,7 +42,7 @@ func (bufferPool BufferPool) InvolveBytes(b ...byte) Bytes {
 func (bufferPool BufferPool) ParseBytes(b ...byte) Bytes {
 	buf := bufferPool.p.Parse(len(b), bytes.NewBuffer(b))
 	x := buf.Unwrap()
-	return Bytes{buf: buf, dat: x.Bytes()}
+	return Bytes{buf: buf, dat: x.Bytes()[:len(b)]}
 }
 
 // Trans please refer to Item.Trans().
