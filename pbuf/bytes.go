@@ -13,6 +13,16 @@ type Bytes struct {
 	dat []byte
 }
 
+// BufferItemToBytes convert between *orbyte.Item[bytes.Buffer]
+// and Bytes.
+//
+// Please notice that Bytes cannnot convert back to
+// *orbyte.Item[bytes.Buffer] again.
+func BufferItemToBytes(buf *orbyte.Item[bytes.Buffer]) Bytes {
+	x := buf.Unwrap()
+	return Bytes{buf: buf, dat: x.Bytes()}
+}
+
 // NewBytes alloc sz bytes.
 func (bufferPool BufferPool) NewBytes(sz int) Bytes {
 	buf := bufferPool.p.New(sz)
