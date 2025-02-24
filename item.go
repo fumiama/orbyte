@@ -46,6 +46,14 @@ func (b *Item[T]) Unwrap() T {
 	return b.val
 }
 
+// Pointer use pointer value of the item
+func (b *Item[T]) Pointer() *T {
+	if b.stat.hasdestroyed() {
+		panic("use after destroy")
+	}
+	return &b.val
+}
+
 // Ref gens new item without ownership.
 //
 // It's a safe reference, thus calling this
