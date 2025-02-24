@@ -19,34 +19,33 @@ type Bytes struct {
 // Please notice that Bytes cannnot convert back to
 // *orbyte.Item[bytes.Buffer] again.
 func BufferItemToBytes(buf *orbyte.Item[bytes.Buffer]) Bytes {
-	x := buf.Unwrap()
-	return Bytes{buf: buf, dat: x.Bytes()}
+	return Bytes{buf: buf, dat: buf.Pointer().Bytes()}
 }
 
 // NewBytes alloc sz bytes.
 func (bufferPool BufferPool) NewBytes(sz int) Bytes {
 	buf := bufferPool.p.New(sz)
-	x := buf.Unwrap()
-	return Bytes{buf: buf, dat: x.Bytes()[:sz]}
+	return Bytes{buf: buf, dat: buf.Pointer().Bytes()[:sz]}
 }
 
 // InvolveBytes involve outside buf into pool.
 func (bufferPool BufferPool) InvolveBytes(b ...byte) Bytes {
 	buf := bufferPool.p.Involve(len(b), bytes.NewBuffer(b))
-	x := buf.Unwrap()
-	return Bytes{buf: buf, dat: x.Bytes()[:len(b)]}
+	return Bytes{buf: buf, dat: buf.Pointer().Bytes()[:len(b)]}
 }
 
 // ParseBytes convert outside bytes to Bytes safely
 // without adding it into pool.
 func (bufferPool BufferPool) ParseBytes(b ...byte) Bytes {
 	buf := bufferPool.p.Parse(len(b), bytes.NewBuffer(b))
-	x := buf.Unwrap()
-	return Bytes{buf: buf, dat: x.Bytes()[:len(b)]}
+	return Bytes{buf: buf, dat: buf.Pointer().Bytes()[:len(b)]}
 }
 
 // Trans please refer to Item.Trans().
 func (b Bytes) Trans() (tb Bytes) {
+	if b.buf == nil {
+		return
+	}
 	tb.buf = b.buf.Trans()
 	tb.dat = b.dat
 	return
@@ -54,11 +53,17 @@ func (b Bytes) Trans() (tb Bytes) {
 
 // Len of slice.
 func (b Bytes) Len() int {
+	if b.buf == nil {
+		return 0
+	}
 	return len(b.dat)
 }
 
 // Cap of slice.
 func (b Bytes) Cap() int {
+	if b.buf == nil {
+		return 0
+	}
 	return cap(b.dat)
 }
 
@@ -69,6 +74,9 @@ func (b Bytes) Bytes() []byte {
 
 // Ref please refer to Item.Ref().
 func (b Bytes) Ref() (rb Bytes) {
+	if b.buf == nil {
+		return
+	}
 	rb.buf = b.buf.Ref()
 	rb.dat = b.dat
 	return
@@ -76,6 +84,9 @@ func (b Bytes) Ref() (rb Bytes) {
 
 // Copy please refer to Item.Copy().
 func (b Bytes) Copy() (cb Bytes) {
+	if b.buf == nil {
+		return
+	}
 	cb.buf = b.buf.Copy()
 	cb.dat = b.dat
 	return
@@ -104,5 +115,7 @@ func (b Bytes) Slice(from, to int) Bytes {
 
 // Destroy please refer to Item.Destroy().
 func (b Bytes) Destroy() {
-	b.buf.Destroy()
+	if b.buf != nil {
+		b.buf.Destroy()
+	}
 }
