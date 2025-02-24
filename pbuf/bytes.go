@@ -48,6 +48,7 @@ func (bufferPool BufferPool) ParseBytes(b ...byte) Bytes {
 // Trans please refer to Item.Trans().
 func (b Bytes) Trans() (tb Bytes) {
 	tb.buf = b.buf.Trans()
+	tb.dat = b.dat
 	return
 }
 
@@ -69,12 +70,14 @@ func (b Bytes) Bytes() []byte {
 // Ref please refer to Item.Ref().
 func (b Bytes) Ref() (rb Bytes) {
 	rb.buf = b.buf.Ref()
+	rb.dat = b.dat
 	return
 }
 
 // Copy please refer to Item.Copy().
 func (b Bytes) Copy() (cb Bytes) {
 	cb.buf = b.buf.Copy()
+	cb.dat = b.dat
 	return
 }
 
