@@ -10,7 +10,7 @@ func TestBytes(t *testing.T) {
 	for i := 0; i < 4096; i++ {
 		b := NewBytes(i)
 		rand.Read(b.Bytes())
-		b.Destroy()
+		b.Trans().SliceFrom(0).SliceTo(i).Destroy()
 	}
 	runtime.GC()
 	out, in := bufferPool.p.CountItems()

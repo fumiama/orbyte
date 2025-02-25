@@ -41,6 +41,11 @@ func (b *Item[T]) Trans() (tb *Item[T]) {
 	return tb
 }
 
+// IsTrans whether this item has been marked as trans.
+func (b *Item[T]) IsTrans() bool {
+	return b.stat.isintrans()
+}
+
 // Unwrap use value of the item
 func (b *Item[T]) Unwrap() T {
 	if b.stat.hasdestroyed() {

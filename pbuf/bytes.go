@@ -94,6 +94,9 @@ func (b Bytes) Copy() (cb Bytes) {
 
 // SliceFrom dat[from:] with Ref.
 func (b Bytes) SliceFrom(from int) Bytes {
+	if b.buf.IsTrans() {
+		return InvolveBytes(b.dat[from:]...)
+	}
 	nb := b.Ref()
 	nb.dat = b.dat[from:]
 	return nb
@@ -101,6 +104,9 @@ func (b Bytes) SliceFrom(from int) Bytes {
 
 // SliceTo dat[:to] with Ref.
 func (b Bytes) SliceTo(to int) Bytes {
+	if b.buf.IsTrans() {
+		return InvolveBytes(b.dat[:to]...)
+	}
 	nb := b.Ref()
 	nb.dat = b.dat[:to]
 	return nb
@@ -108,6 +114,9 @@ func (b Bytes) SliceTo(to int) Bytes {
 
 // Slice dat[from:to] with Ref.
 func (b Bytes) Slice(from, to int) Bytes {
+	if b.buf.IsTrans() {
+		return InvolveBytes(b.dat[from:to]...)
+	}
 	nb := b.Ref()
 	nb.dat = b.dat[from:to]
 	return nb
