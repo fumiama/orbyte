@@ -117,3 +117,9 @@ func (b Bytes) Slice(from, to int) Bytes {
 	nb.dat = b.dat[from:to]
 	return nb
 }
+
+// KeepAlive marks Bytes value as reachable.
+func (b Bytes) KeepAlive() {
+	_ = b.buf
+	_ = b.dat
+}
