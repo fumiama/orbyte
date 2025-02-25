@@ -2,6 +2,7 @@ package pbuf
 
 import (
 	"bytes"
+	"runtime"
 
 	"github.com/fumiama/orbyte"
 )
@@ -122,4 +123,6 @@ func (b Bytes) Slice(from, to int) Bytes {
 func (b Bytes) KeepAlive() {
 	_ = b.buf
 	_ = b.dat
+	runtime.KeepAlive(b.buf)
+	runtime.KeepAlive(b.dat)
 }
