@@ -22,9 +22,11 @@ type Item[T any] struct {
 // Trans ownership to a new item and
 // destroy original item immediately.
 //
+// The value in new item will not be Reset().
+//
 // Call this function to drop your ownership
 // before passing it to another function
-// that do not return to you.
+// that is not controlled by you.
 func (b *Item[T]) Trans() (tb *Item[T]) {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
@@ -34,6 +36,7 @@ func (b *Item[T]) Trans() (tb *Item[T]) {
 	tb.stat = status(atomic.SwapUintptr(
 		(*uintptr)(&b.stat), uintptr(destroyedstatus),
 	))
+	tb.stat.setintrans(true)
 	b.pool.put(b)
 	return tb
 }
@@ -66,6 +69,7 @@ func (b *Item[T]) Ref() (rb *Item[T]) {
 	rb = b.pool.newempty()
 	*rb = *b
 	rb.stat.setbuffered(false)
+	rb.stat.setintrans(false)
 	return
 }
 
@@ -87,7 +91,7 @@ func (b *Item[T]) Destroy() {
 	if stat.hasdestroyed() {
 		panic("use after destroy")
 	}
-	if b.stat.isbuffered() {
+	if !stat.isintrans() && stat.isbuffered() {
 		b.pool.pooler.Reset(&b.val)
 	}
 	b.pool.put(b)
@@ -102,7 +106,7 @@ func (b *Item[T]) setautodestroy() *Item[T] {
 		if item.stat.hasdestroyed() {
 			panic("unexpected hasdestroyed")
 		}
-		if item.stat.isbuffered() {
+		if !item.stat.isintrans() && item.stat.isbuffered() {
 			item.pool.pooler.Reset(&item.val)
 		}
 		item.stat.setdestroyed(true)

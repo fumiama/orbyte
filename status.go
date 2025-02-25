@@ -5,6 +5,7 @@ import "sync/atomic"
 const (
 	statusisbuffered = 1 << iota
 	statusdestroyed
+	statusisintrans
 )
 
 type status uintptr
@@ -56,4 +57,12 @@ func (c *status) hasdestroyed() bool {
 
 func (c *status) setdestroyed(v bool) {
 	c.setbool(v, statusdestroyed)
+}
+
+func (c *status) isintrans() bool {
+	return c.loadbool(statusisintrans)
+}
+
+func (c *status) setintrans(v bool) {
+	c.setbool(v, statusisintrans)
 }
