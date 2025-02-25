@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	mrand "math/rand"
 	"runtime"
+	"sync"
 	"testing"
+	"time"
 )
 
 // TestBytesSlice sometimes fails at first run because
@@ -111,4 +114,29 @@ func TestBytesCopy(t *testing.T) {
 	if out != 0 {
 		t.Fail()
 	}
+}
+
+func TestBytesTransMultithread(t *testing.T) {
+	wg := sync.WaitGroup{}
+	for i := 0; i < 4096; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			time.Sleep(time.Millisecond * time.Duration(mrand.Intn(10)))
+			buf := NewBytes(65536)
+			refer := make([]byte, 65536)
+			rand.Read(refer)
+			copy(buf.Bytes(), refer)
+			wg.Add(1)
+			go func(buf Bytes) {
+				defer wg.Done()
+				time.Sleep(time.Millisecond * time.Duration(mrand.Intn(10)))
+				if !bytes.Equal(refer, buf.Bytes()) {
+					panic("unexpected")
+				}
+				buf.Destroy()
+			}(buf.Trans())
+		}()
+	}
+	wg.Wait()
 }
