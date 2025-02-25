@@ -37,7 +37,7 @@ func (b *Item[T]) Trans() (tb *Item[T]) {
 		(*uintptr)(&b.stat), uintptr(destroyedstatus),
 	))
 	tb.stat.setintrans(true)
-	b.pool.put(b)
+	b.destroybystat(status(0))
 	return tb
 }
 
@@ -83,18 +83,27 @@ func (b *Item[T]) Copy() (cb *Item[T]) {
 	return
 }
 
-// Destroy item and put it back to pool.
-func (b *Item[T]) Destroy() {
-	stat := status(atomic.SwapUintptr(
-		(*uintptr)(&b.stat), uintptr(destroyedstatus),
-	))
-	if stat.hasdestroyed() {
+func (b *Item[T]) destroybystat(stat status) {
+	switch {
+	case stat.hasdestroyed():
 		panic("use after destroy")
-	}
-	if !stat.isintrans() && stat.isbuffered() {
+	case stat.isintrans():
+		var v T
+		b.val = v
+	case stat.isbuffered():
 		b.pool.pooler.Reset(&b.val)
+	default:
+		var v T
+		b.val = v
 	}
 	b.pool.put(b)
+}
+
+// Destroy item and put it back to pool.
+func (b *Item[T]) Destroy() {
+	b.destroybystat(status(atomic.SwapUintptr(
+		(*uintptr)(&b.stat), uintptr(destroyedstatus),
+	)))
 }
 
 // setautodestroy item on GC.

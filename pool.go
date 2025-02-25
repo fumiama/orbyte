@@ -63,14 +63,12 @@ func (pool *Pool[T]) newempty() *Item[T] {
 func (pool *Pool[T]) put(item *Item[T]) {
 	runtime.SetFinalizer(item, nil)
 
+	item.stat.setdestroyed(true)
+	item.cfg = nil
+
 	if pool.isstrict {
 		return
 	}
-
-	item.cfg = nil
-	var dt T
-	item.val = dt
-
 	pool.pool.Put(item)
 
 	pool.decout()
