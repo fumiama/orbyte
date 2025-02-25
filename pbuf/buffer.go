@@ -2,7 +2,6 @@ package pbuf
 
 import (
 	"bytes"
-	"io"
 	"unsafe"
 
 	"github.com/fumiama/orbyte"
@@ -31,26 +30,22 @@ type buffer struct {
 	lastRead readOp // last read operation, so that Unread* can work correctly.
 }
 
-func skip(w *bytes.Buffer, n int) (int, error) {
+func skip(w *bytes.Buffer, n int) {
 	if n == 0 {
-		return 0, nil
+		return
 	}
 	b := (*buffer)(unsafe.Pointer(w))
 	b.lastRead = opInvalid
 	if len(b.buf) <= b.off {
 		// Buffer is empty, reset to recover space.
 		w.Reset()
-		if n == 0 {
-			return 0, nil
-		}
-		return 0, io.EOF
+		return
 	}
 	n = minnum(n, len(b.buf[b.off:]))
 	b.off += n
 	if n > 0 {
 		b.lastRead = opRead
 	}
-	return n, nil
 }
 
 // The readOp constants describe the last action performed on
