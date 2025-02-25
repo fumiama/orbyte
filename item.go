@@ -2,6 +2,7 @@ package orbyte
 
 import (
 	"runtime"
+	"strconv"
 	"sync/atomic"
 )
 
@@ -15,8 +16,18 @@ type Item[T any] struct {
 	cfg  any
 
 	stat status
+	ref  *Item[T]
+	refc int32 // refc -1 means transferred / destroyed
 
 	val T
+}
+
+func (b *Item[T]) incref() {
+	atomic.AddInt32(&b.refc, 1)
+}
+
+func (b *Item[T]) decref() {
+	atomic.AddInt32(&b.refc, -1)
 }
 
 // Trans ownership to a new item and
@@ -27,15 +38,21 @@ type Item[T any] struct {
 // Call this function to drop your ownership
 // before passing it to another function
 // that is not controlled by you.
+//
+// Avoid to call this function after calling Ref().
 func (b *Item[T]) Trans() (tb *Item[T]) {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
+	}
+	if b.ref != nil {
+		panic("cannot trans ref")
 	}
 	tb = b.pool.newempty()
 	*tb = *b
 	tb.stat = status(atomic.SwapUintptr(
 		(*uintptr)(&b.stat), uintptr(destroyedstatus),
 	))
+	tb.refc = 0
 	tb.stat.setintrans(true)
 	b.destroybystat(status(0))
 	return tb
@@ -44,6 +61,11 @@ func (b *Item[T]) Trans() (tb *Item[T]) {
 // IsTrans whether this item has been marked as trans.
 func (b *Item[T]) IsTrans() bool {
 	return b.stat.isintrans()
+}
+
+// IsRef whether this item is a reference.
+func (b *Item[T]) IsRef() bool {
+	return b.ref != nil
 }
 
 // Unwrap use value of the item
@@ -73,6 +95,9 @@ func (b *Item[T]) Ref() (rb *Item[T]) {
 	}
 	rb = b.pool.newempty()
 	*rb = *b
+	rb.ref = b
+	rb.refc = 0
+	b.incref()
 	rb.stat.setbuffered(false)
 	rb.stat.setintrans(false)
 	return
@@ -89,9 +114,18 @@ func (b *Item[T]) Copy() (cb *Item[T]) {
 }
 
 func (b *Item[T]) destroybystat(stat status) {
+	if !atomic.CompareAndSwapInt32(&b.refc, 0, -1) {
+		if b.refc < 0 {
+			panic("use imm. after destroy")
+		}
+		panic("cannot destroy: " + strconv.Itoa(int(b.refc)) + " refs remained")
+	}
+	if b.ref != nil {
+		defer b.ref.decref()
+	}
 	switch {
 	case stat.hasdestroyed():
-		panic("use after destroy")
+		panic("use after put back to pool")
 	case stat.isintrans():
 		var v T
 		b.val = v
