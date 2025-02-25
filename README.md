@@ -12,6 +12,7 @@ import (
 func main() {
     b := pbuf.NewBytes(1024) // Allocate Bytes from pool.
     rand.Read(b.Bytes())     // Do sth.
-    b.Destroy() // Optional, can be auto-destroyed on GC.
+    b.KeepAlive()            // Mark as reachable.
+    // After that, b will be auto-reused on GC.
 }
 ```
