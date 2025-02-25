@@ -58,6 +58,11 @@ func (b *Item[T]) Trans() (tb *Item[T]) {
 	return tb
 }
 
+// HasInvolved whether this item is buffered.
+func (b *Item[T]) HasInvolved() bool {
+	return b.stat.isbuffered()
+}
+
 // IsTrans whether this item has been marked as trans.
 func (b *Item[T]) IsTrans() bool {
 	return b.stat.isintrans()

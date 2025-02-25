@@ -87,7 +87,10 @@ func (b Bytes) Copy() (cb Bytes) {
 // SliceFrom dat[from:] with Ref.
 func (b Bytes) SliceFrom(from int) Bytes {
 	if b.buf.IsTrans() {
-		return InvolveBytes(b.dat[from:]...)
+		if b.buf.HasInvolved() {
+			return InvolveBytes(b.dat[from:]...)
+		}
+		return ParseBytes(b.dat[from:]...)
 	}
 	nb := b.Ref()
 	skip(nb.buf.Pointer(), from)
@@ -98,7 +101,10 @@ func (b Bytes) SliceFrom(from int) Bytes {
 // SliceTo dat[:to] with Ref.
 func (b Bytes) SliceTo(to int) Bytes {
 	if b.buf.IsTrans() {
-		return InvolveBytes(b.dat[:to]...)
+		if b.buf.HasInvolved() {
+			return InvolveBytes(b.dat[:to]...)
+		}
+		return ParseBytes(b.dat[:to]...)
 	}
 	nb := b.Ref()
 	nb.buf.Pointer().Truncate(to)
@@ -109,7 +115,10 @@ func (b Bytes) SliceTo(to int) Bytes {
 // Slice dat[from:to] with Ref.
 func (b Bytes) Slice(from, to int) Bytes {
 	if b.buf.IsTrans() {
-		return InvolveBytes(b.dat[from:to]...)
+		if b.buf.HasInvolved() {
+			return InvolveBytes(b.dat[from:to]...)
+		}
+		return ParseBytes(b.dat[from:to]...)
 	}
 	nb := b.Ref()
 	buf := nb.buf.Pointer()
