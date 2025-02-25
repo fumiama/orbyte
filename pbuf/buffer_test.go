@@ -42,7 +42,7 @@ func testBuffer(buf *orbyte.Item[bytes.Buffer], t *testing.T) {
 	if !bytes.Equal(bufr.Pointer().Bytes(), buf.Pointer().Bytes()) {
 		t.Fatal("unexpected")
 	}
-	bufr.Destroy()
+	bufr.ManualDestroy()
 
 	bufcp = bufcp.Trans()
 	if bufcp.Pointer().Len() != 4096 {
@@ -51,7 +51,7 @@ func testBuffer(buf *orbyte.Item[bytes.Buffer], t *testing.T) {
 	if !bytes.Equal(bufcp.Pointer().Bytes(), buf.Pointer().Bytes()) {
 		t.Fatal("unexpected")
 	}
-	bufcp.Destroy()
+	bufcp.ManualDestroy()
 
 	runtime.GC()
 	runtime.Gosched()

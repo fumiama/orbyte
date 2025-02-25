@@ -117,8 +117,3 @@ func (b Bytes) Slice(from, to int) Bytes {
 	nb.dat = b.dat[from:to]
 	return nb
 }
-
-// Destroy please refer to Item.Destroy().
-func (b Bytes) Destroy() {
-	b.buf.Destroy()
-}

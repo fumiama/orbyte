@@ -10,7 +10,7 @@ import (
 func TestPool(t *testing.T) {
 	p := NewPool[[]byte](simplepooler{})
 	x := p.New(200)
-	x.Destroy()
+	x.ManualDestroy()
 	out, in := p.CountItems()
 	t.Log("out", out, "in", in)
 	if out != 0 || in != 1 {
@@ -22,7 +22,7 @@ func TestPool(t *testing.T) {
 		if out != 1 || in != 0 {
 			t.Fatal("unexpected behavior")
 		}
-		item.Destroy()
+		item.ManualDestroy()
 	}
 	out, in = p.CountItems()
 	t.Log("out", out, "in", in)
@@ -53,7 +53,7 @@ func TestPool(t *testing.T) {
 func user(item *Item[[]byte], wg *sync.WaitGroup) {
 	defer wg.Done()
 	rand.Read(item.Unwrap())
-	item.Destroy()
+	item.ManualDestroy()
 }
 
 func usernodestroy(item *Item[[]byte], wg *sync.WaitGroup) {

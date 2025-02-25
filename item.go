@@ -104,8 +104,11 @@ func (b *Item[T]) destroybystat(stat status) {
 	b.pool.put(b)
 }
 
-// Destroy item and put it back to pool.
-func (b *Item[T]) Destroy() {
+// ManualDestroy item and put it back to pool.
+//
+// Calling this method without setting pool.SetManualDestroy(true)
+// can probably cause panic.
+func (b *Item[T]) ManualDestroy() {
 	b.destroybystat(status(atomic.SwapUintptr(
 		(*uintptr)(&b.stat), uintptr(destroyedstatus),
 	)))

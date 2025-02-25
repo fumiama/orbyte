@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+// manualDestroy please refer to Item.manualDestroy().
+//
+// Only for test purposes.
+func (b Bytes) manualDestroy() {
+	b.buf.ManualDestroy()
+}
+
 // TestBytesSlice sometimes fails at first run because
 // GC not collecting all unused items.
 func TestBytesSlice(t *testing.T) {
@@ -29,7 +36,7 @@ func TestBytesSlice(t *testing.T) {
 			t.Log("got:", hex.EncodeToString(x.Bytes()))
 			t.Fatal("index", i, "unexpected")
 		}
-		x.Destroy()
+		x.manualDestroy()
 		// test trans slice
 		b = b.Trans().SliceFrom(5).SliceTo(i - 5 - 5)
 		if !bytes.Equal(buf[5:i-5], b.Bytes()) {
@@ -37,7 +44,7 @@ func TestBytesSlice(t *testing.T) {
 			t.Log("got:", hex.EncodeToString(b.Bytes()))
 			t.Fatal("index", i, "unexpected")
 		}
-		b.Destroy()
+		b.manualDestroy()
 	}
 	runtime.GC()
 	runtime.Gosched()
@@ -61,7 +68,7 @@ func TestBytesInvolve(t *testing.T) {
 		if !bytes.Equal(b.Bytes(), buf[:i]) {
 			t.Fatal("index", i, "unexpected")
 		}
-		b.Destroy()
+		b.manualDestroy()
 	}
 	runtime.GC()
 	out, in := bufferPool.p.CountItems()
@@ -82,7 +89,7 @@ func TestBytesParse(t *testing.T) {
 		if !bytes.Equal(b.Bytes(), buf[:i]) {
 			t.Fatal("index", i, "unexpected")
 		}
-		b.Destroy()
+		b.manualDestroy()
 	}
 	runtime.GC()
 	out, in := bufferPool.p.CountItems()
@@ -106,7 +113,7 @@ func TestBytesCopy(t *testing.T) {
 		if bytes.Equal(b.Bytes(), buf[:i]) {
 			t.Fatal("index", i, "unexpected")
 		}
-		b.Destroy()
+		b.manualDestroy()
 	}
 	runtime.GC()
 	out, in := bufferPool.p.CountItems()
@@ -134,7 +141,7 @@ func TestBytesTransMultithread(t *testing.T) {
 				if !bytes.Equal(refer, buf.Bytes()) {
 					panic("unexpected")
 				}
-				buf.Destroy()
+				buf.manualDestroy()
 			}(buf.Trans())
 		}()
 	}

@@ -13,7 +13,8 @@ type Pool[T any] struct {
 	pool     sync.Pool
 	countin  int32
 	countout int32
-	isstrict bool
+	noputbak bool
+	manudstr bool
 }
 
 // NewPool make a new pool from custom pooler.
@@ -26,11 +27,17 @@ func NewPool[T any](pooler Pooler[T]) *Pool[T] {
 	return p
 }
 
-// SetStrictMode panic on every misuse.
+// SetNoPutBack make it panic on every use-after-destroy.
 //
 // Enable this to detect coding errors.
-func (pool *Pool[T]) SetStrictMode(on bool) {
-	pool.isstrict = on
+func (pool *Pool[T]) SetNoPutBack(on bool) {
+	pool.noputbak = on
+}
+
+// SetManualDestroy mark that user must manually
+// run Item.Destroy().
+func (pool *Pool[T]) SetManualDestroy(on bool) {
+	pool.manudstr = on
 }
 
 func (pool *Pool[T]) incin() {
@@ -56,17 +63,21 @@ func (pool *Pool[T]) newempty() *Item[T] {
 	}
 	item.stat = status(0)
 	pool.incout()
-	item.setautodestroy()
+	if !pool.manudstr {
+		item.setautodestroy()
+	}
 	return item
 }
 
 func (pool *Pool[T]) put(item *Item[T]) {
-	runtime.SetFinalizer(item, nil)
+	if !pool.manudstr {
+		runtime.SetFinalizer(item, nil)
+	}
 
 	item.stat.setdestroyed(true)
 	item.cfg = nil
 
-	if pool.isstrict {
+	if pool.noputbak {
 		return
 	}
 	pool.pool.Put(item)
