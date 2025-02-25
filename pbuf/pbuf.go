@@ -17,9 +17,19 @@ func NewBufferPool() BufferPool {
 	return BufferPool{p: orbyte.NewPool[bytes.Buffer](bufpooler{})}
 }
 
-// NewBuffer wraps bytes.NewBuffer
+// NewBuffer wraps bytes.NewBuffer into Item.
 func NewBuffer(buf []byte) *orbyte.Item[bytes.Buffer] {
 	return bufferPool.NewBuffer(buf)
+}
+
+// InvolveBuffer involve external *bytes.Buffer into Item.
+func InvolveBuffer(buf *bytes.Buffer) *orbyte.Item[bytes.Buffer] {
+	return bufferPool.InvolveBuffer(buf)
+}
+
+// ParseBuffer convert external *bytes.Buffer into Item.
+func ParseBuffer(buf *bytes.Buffer) *orbyte.Item[bytes.Buffer] {
+	return bufferPool.ParseBuffer(buf)
 }
 
 // NewBytes alloc sz bytes.

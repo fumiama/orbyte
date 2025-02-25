@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"reflect"
+	"unsafe"
 )
 
 type bufpooler struct{}
@@ -12,14 +13,21 @@ func (bufpooler) New(config any, pooled bytes.Buffer) bytes.Buffer {
 	switch c := config.(type) {
 	case int:
 		pooled.Grow(c)
+		*(*[]byte)(unsafe.Pointer(&pooled)) = pooled.Bytes()[:c]
+		if c != pooled.Len() {
+			panic("unexpected bad buffer Grow")
+		}
 		return pooled
 	case []byte:
 		if len(c) > 0 || pooled.Cap() < cap(c) {
-			return *bytes.NewBuffer(c)
+			buf := bytes.NewBuffer(c)
+			if len(c) != buf.Len() {
+				panic("unexpected bad bytes.NewBuffer")
+			}
+			return *buf
 		}
 		return pooled
 	case string:
-		pooled.Grow(len(c))
 		pooled.WriteString(c)
 		return pooled
 	default:
@@ -61,7 +69,9 @@ func (bufpooler) Reset(item *bytes.Buffer) {
 }
 
 func (bufpooler) Copy(dst, src *bytes.Buffer) {
-	_, err := io.Copy(dst, src)
+	dst.Reset()
+	srccp := *src
+	_, err := io.Copy(dst, &srccp)
 	if err != nil {
 		panic(err)
 	}

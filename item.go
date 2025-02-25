@@ -120,11 +120,7 @@ func (b *Item[T]) setautodestroy() *Item[T] {
 		if item.stat.hasdestroyed() {
 			panic("unexpected hasdestroyed")
 		}
-		if !item.stat.isintrans() && item.stat.isbuffered() {
-			item.pool.pooler.Reset(&item.val)
-		}
-		item.stat.setdestroyed(true)
-		item.pool.put(item)
+		item.destroybystat(item.stat)
 	})
 	return b
 }

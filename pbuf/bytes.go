@@ -38,14 +38,11 @@ func (bufferPool BufferPool) InvolveBytes(b ...byte) Bytes {
 // without adding it into pool.
 func (bufferPool BufferPool) ParseBytes(b ...byte) Bytes {
 	buf := bufferPool.p.Parse(len(b), bytes.NewBuffer(b))
-	return Bytes{buf: buf, dat: buf.Pointer().Bytes()[:len(b)]}
+	return Bytes{buf: buf, dat: buf.Pointer().Bytes()}
 }
 
 // Trans please refer to Item.Trans().
 func (b Bytes) Trans() (tb Bytes) {
-	if b.buf == nil {
-		return
-	}
 	tb.buf = b.buf.Trans()
 	tb.dat = b.dat
 	return
@@ -53,17 +50,11 @@ func (b Bytes) Trans() (tb Bytes) {
 
 // Len of slice.
 func (b Bytes) Len() int {
-	if b.buf == nil {
-		return 0
-	}
 	return len(b.dat)
 }
 
 // Cap of slice.
 func (b Bytes) Cap() int {
-	if b.buf == nil {
-		return 0
-	}
 	return cap(b.dat)
 }
 
@@ -74,9 +65,6 @@ func (b Bytes) Bytes() []byte {
 
 // Ref please refer to Item.Ref().
 func (b Bytes) Ref() (rb Bytes) {
-	if b.buf == nil {
-		return
-	}
 	rb.buf = b.buf.Ref()
 	rb.dat = b.dat
 	return
@@ -84,11 +72,8 @@ func (b Bytes) Ref() (rb Bytes) {
 
 // Copy please refer to Item.Copy().
 func (b Bytes) Copy() (cb Bytes) {
-	if b.buf == nil {
-		return
-	}
 	cb.buf = b.buf.Copy()
-	cb.dat = b.dat
+	cb.dat = cb.buf.Pointer().Bytes()
 	return
 }
 
@@ -98,6 +83,7 @@ func (b Bytes) SliceFrom(from int) Bytes {
 		return InvolveBytes(b.dat[from:]...)
 	}
 	nb := b.Ref()
+	skip(nb.buf.Pointer(), from)
 	nb.dat = b.dat[from:]
 	return nb
 }
@@ -108,6 +94,7 @@ func (b Bytes) SliceTo(to int) Bytes {
 		return InvolveBytes(b.dat[:to]...)
 	}
 	nb := b.Ref()
+	nb.buf.Pointer().Truncate(to)
 	nb.dat = b.dat[:to]
 	return nb
 }
@@ -118,13 +105,14 @@ func (b Bytes) Slice(from, to int) Bytes {
 		return InvolveBytes(b.dat[from:to]...)
 	}
 	nb := b.Ref()
+	buf := nb.buf.Pointer()
+	skip(buf, from)
+	buf.Truncate(to - from)
 	nb.dat = b.dat[from:to]
 	return nb
 }
 
 // Destroy please refer to Item.Destroy().
 func (b Bytes) Destroy() {
-	if b.buf != nil {
-		b.buf.Destroy()
-	}
+	b.buf.Destroy()
 }
