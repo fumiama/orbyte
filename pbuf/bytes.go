@@ -41,6 +41,12 @@ func (bufferPool BufferPool) ParseBytes(b ...byte) Bytes {
 	return Bytes{buf: buf, dat: buf.Pointer().Bytes()}
 }
 
+// HasInit whether this Bytes is made by pool or
+// just declared.
+func (b Bytes) HasInit() bool {
+	return b.buf != nil
+}
+
 // Trans please refer to Item.Trans().
 func (b Bytes) Trans() (tb Bytes) {
 	tb.buf = b.buf.Trans()
