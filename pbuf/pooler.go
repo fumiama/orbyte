@@ -7,9 +7,15 @@ import (
 	"unsafe"
 )
 
-type bufpooler struct{}
+// UserBuffer with customizable user data structure inside.
+type UserBuffer[USRDAT any] struct {
+	bytes.Buffer
+	DAT USRDAT
+}
 
-func (bufpooler) New(config any, pooled bytes.Buffer) bytes.Buffer {
+type bufpooler[USRDAT any] struct{}
+
+func (bufpooler[USRDAT]) New(config any, pooled UserBuffer[USRDAT]) UserBuffer[USRDAT] {
 	switch c := config.(type) {
 	case int:
 		pooled.Grow(c)
@@ -24,7 +30,7 @@ func (bufpooler) New(config any, pooled bytes.Buffer) bytes.Buffer {
 			if len(c) != buf.Len() {
 				panic("unexpected bad bytes.NewBuffer")
 			}
-			return *buf
+			return UserBuffer[USRDAT]{Buffer: *buf}
 		}
 		return pooled
 	case string:
@@ -35,12 +41,12 @@ func (bufpooler) New(config any, pooled bytes.Buffer) bytes.Buffer {
 	}
 }
 
-func (bufpooler) Parse(obj any, pooled bytes.Buffer) bytes.Buffer {
+func (bufpooler[USRDAT]) Parse(obj any, pooled UserBuffer[USRDAT]) UserBuffer[USRDAT] {
 	switch o := obj.(type) {
 	case *bytes.Buffer:
-		return *o
+		return UserBuffer[USRDAT]{Buffer: *o}
 	case bytes.Buffer:
-		return o
+		return UserBuffer[USRDAT]{Buffer: o}
 	case []byte:
 		pooled.Write(o)
 		return pooled
@@ -58,17 +64,17 @@ func (bufpooler) Parse(obj any, pooled bytes.Buffer) bytes.Buffer {
 	}
 }
 
-func (bufpooler) Reset(item *bytes.Buffer) {
+func (bufpooler[USRDAT]) Reset(item *UserBuffer[USRDAT]) {
 	// See https://golang.org/issue/23199
 	const maxSize = 1 << 16
 	if item.Cap() > maxSize { // drop large buffer
-		*item = bytes.Buffer{}
+		*item = UserBuffer[USRDAT]{}
 		return
 	}
 	item.Reset()
 }
 
-func (bufpooler) Copy(dst, src *bytes.Buffer) {
+func (bufpooler[USRDAT]) Copy(dst, src *UserBuffer[USRDAT]) {
 	dst.Reset()
 	srccp := *src
 	_, err := io.Copy(dst, &srccp)

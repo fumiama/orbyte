@@ -7,16 +7,22 @@ import (
 )
 
 // NewBuffer wraps bytes.NewBuffer into Item.
-func (bufferPool BufferPool) NewBuffer(buf []byte) *orbyte.Item[bytes.Buffer] {
+func (bufferPool BufferPool[USRDAT]) NewBuffer(
+	buf []byte,
+) *orbyte.Item[UserBuffer[USRDAT]] {
 	return bufferPool.p.New(buf)
 }
 
 // InvolveBuffer involve external *bytes.Buffer into Item.
-func (bufferPool BufferPool) InvolveBuffer(buf *bytes.Buffer) *orbyte.Item[bytes.Buffer] {
+func (bufferPool BufferPool[USRDAT]) InvolveBuffer(
+	buf *bytes.Buffer,
+) *orbyte.Item[UserBuffer[USRDAT]] {
 	return bufferPool.p.Involve(buf.Len(), buf)
 }
 
 // ParseBuffer convert external *bytes.Buffer into Item.
-func (bufferPool BufferPool) ParseBuffer(buf *bytes.Buffer) *orbyte.Item[bytes.Buffer] {
+func (bufferPool BufferPool[USRDAT]) ParseBuffer(
+	buf *bytes.Buffer,
+) *orbyte.Item[UserBuffer[USRDAT]] {
 	return bufferPool.p.Parse(buf.Len(), buf)
 }

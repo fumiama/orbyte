@@ -7,28 +7,36 @@ import (
 	"github.com/fumiama/orbyte"
 )
 
-var bufferPool = NewBufferPool()
+var bufferPool = NewBufferPool[struct{}]()
 
-type BufferPool struct {
-	p *orbyte.Pool[bytes.Buffer]
+type (
+	OBuffer = orbyte.Item[Buffer]
+	Buffer  = UserBuffer[struct{}]
+	Bytes   = UserBytes[struct{}]
+)
+
+type BufferPool[USRDAT any] struct {
+	p *orbyte.Pool[UserBuffer[USRDAT]]
 }
 
-func NewBufferPool() BufferPool {
-	return BufferPool{p: orbyte.NewPool[bytes.Buffer](bufpooler{})}
+func NewBufferPool[USRDAT any]() BufferPool[USRDAT] {
+	return BufferPool[USRDAT]{
+		p: orbyte.NewPool[UserBuffer[USRDAT]](bufpooler[USRDAT]{}),
+	}
 }
 
 // NewBuffer wraps bytes.NewBuffer into Item.
-func NewBuffer(buf []byte) *orbyte.Item[bytes.Buffer] {
+func NewBuffer(buf []byte) *OBuffer {
 	return bufferPool.NewBuffer(buf)
 }
 
 // InvolveBuffer involve external *bytes.Buffer into Item.
-func InvolveBuffer(buf *bytes.Buffer) *orbyte.Item[bytes.Buffer] {
+func InvolveBuffer(buf *bytes.Buffer) *OBuffer {
 	return bufferPool.InvolveBuffer(buf)
 }
 
 // ParseBuffer convert external *bytes.Buffer into Item.
-func ParseBuffer(buf *bytes.Buffer) *orbyte.Item[bytes.Buffer] {
+func ParseBuffer(buf *bytes.Buffer) *OBuffer {
 	return bufferPool.ParseBuffer(buf)
 }
 

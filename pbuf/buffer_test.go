@@ -6,8 +6,6 @@ import (
 	"io"
 	"runtime"
 	"testing"
-
-	"github.com/fumiama/orbyte"
 )
 
 func TestBuffer(t *testing.T) {
@@ -19,8 +17,8 @@ func TestBuffer(t *testing.T) {
 	testBuffer(InvolveBuffer(bytes.NewBuffer(make([]byte, 0, 8192))), t)
 }
 
-func testBuffer(buf *orbyte.Item[bytes.Buffer], t *testing.T) {
-	buf.P(func(buf *bytes.Buffer) {
+func testBuffer(buf *OBuffer, t *testing.T) {
+	buf.P(func(buf *Buffer) {
 		if buf.Len() != 4096 {
 			io.CopyN(buf, rand.Reader, 4096)
 			if buf.Len() != 4096 {
@@ -30,7 +28,7 @@ func testBuffer(buf *orbyte.Item[bytes.Buffer], t *testing.T) {
 	})
 	bufcp := buf.Copy()
 	dat := buf.Trans()
-	bufcp.P(func(bufcp *bytes.Buffer) {
+	bufcp.P(func(bufcp *Buffer) {
 		if bufcp.Len() != 4096 {
 			t.Fatal("got", bufcp.Len())
 		}

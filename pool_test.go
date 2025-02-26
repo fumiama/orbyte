@@ -1,7 +1,9 @@
 package orbyte
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/hex"
 	"runtime"
 	"sync"
 	"testing"
@@ -29,13 +31,21 @@ func TestPool(t *testing.T) {
 	if out != 0 {
 		t.Fatal("unexpected behavior")
 	}
+	item := p.New(4096)
+	item.V(func(b []byte) {
+		rand.Read(b)
+	})
+	exp := item.Copy().Trans()
 	wg := sync.WaitGroup{}
 	for i := 0; i < 4096; i++ {
 		item := p.New(i)
+		item.V(func(b []byte) {
+			copy(b, exp)
+		})
 		wg.Add(1)
 		go useranddes(item.Copy(), &wg)
 		wg.Add(1)
-		go userv(item.Trans(), &wg)
+		go userv(item.Trans(), &wg, exp[:i])
 	}
 	wg.Wait()
 	runtime.GC()
@@ -54,9 +64,11 @@ func useranddes(item *Item[[]byte], wg *sync.WaitGroup) {
 	item.ManualDestroy()
 }
 
-func userv(b []byte, wg *sync.WaitGroup) {
+func userv(b []byte, wg *sync.WaitGroup, exp []byte) {
 	defer wg.Done()
-	rand.Read(b)
+	if !bytes.Equal(b, exp) {
+		panic("expect " + hex.EncodeToString(exp) + " got " + hex.EncodeToString(b))
+	}
 }
 
 type simplepooler struct{}

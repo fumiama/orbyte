@@ -6,41 +6,43 @@ import (
 	"github.com/fumiama/orbyte"
 )
 
-// Bytes wrap pooled buffer into []byte
+// UserBytes wrap pooled buffer into []byte
 // while sharing the same pool.
-type Bytes struct {
-	buf  *orbyte.Item[bytes.Buffer]
+type UserBytes[USRDAT any] struct {
+	buf  *orbyte.Item[UserBuffer[USRDAT]]
 	a, b int
 }
 
-// BufferItemToBytes convert between *orbyte.Item[bytes.Buffer]
+// BufferItemToBytes convert between *Buffer
 // and Bytes.
 //
 // Please notice that Bytes cannnot convert back to
-// *orbyte.Item[bytes.Buffer] again.
-func BufferItemToBytes(buf *orbyte.Item[bytes.Buffer]) (b Bytes) {
+// *Buffer again.
+func BufferItemToBytes[USRDAT any](
+	buf *orbyte.Item[UserBuffer[USRDAT]],
+) (b UserBytes[USRDAT]) {
 	b.buf = buf
-	buf.P(func(buf *bytes.Buffer) {
+	buf.P(func(buf *UserBuffer[USRDAT]) {
 		b.b = buf.Len()
 	})
 	return
 }
 
 // NewBytes alloc sz bytes.
-func (bufferPool BufferPool) NewBytes(sz int) (b Bytes) {
+func (bufferPool BufferPool[USRDAT]) NewBytes(sz int) (b UserBytes[USRDAT]) {
 	buf := bufferPool.p.New(sz)
 	b.buf = buf
-	buf.P(func(buf *bytes.Buffer) {
+	buf.P(func(buf *UserBuffer[USRDAT]) {
 		b.b = buf.Len()
 	})
 	return
 }
 
 // InvolveBytes involve outside buf into pool.
-func (bufferPool BufferPool) InvolveBytes(p ...byte) (b Bytes) {
+func (bufferPool BufferPool[USRDAT]) InvolveBytes(p ...byte) (b UserBytes[USRDAT]) {
 	buf := bufferPool.p.Involve(len(p), bytes.NewBuffer(p))
 	b.buf = buf
-	buf.P(func(buf *bytes.Buffer) {
+	buf.P(func(buf *UserBuffer[USRDAT]) {
 		b.b = buf.Len()
 	})
 	return
@@ -48,10 +50,10 @@ func (bufferPool BufferPool) InvolveBytes(p ...byte) (b Bytes) {
 
 // ParseBytes convert outside bytes to Bytes safely
 // without adding it into pool.
-func (bufferPool BufferPool) ParseBytes(p ...byte) (b Bytes) {
+func (bufferPool BufferPool[USRDAT]) ParseBytes(p ...byte) (b UserBytes[USRDAT]) {
 	buf := bufferPool.p.Parse(len(p), bytes.NewBuffer(p))
 	b.buf = buf
-	buf.P(func(buf *bytes.Buffer) {
+	buf.P(func(buf *UserBuffer[USRDAT]) {
 		b.b = buf.Len()
 	})
 	return
@@ -59,54 +61,54 @@ func (bufferPool BufferPool) ParseBytes(p ...byte) (b Bytes) {
 
 // HasInit whether this Bytes is made by pool or
 // just declared.
-func (b Bytes) HasInit() bool {
+func (b UserBytes[USRDAT]) HasInit() bool {
 	return b.buf != nil
 }
 
 // Trans please refer to Item.Trans().
-func (b Bytes) Trans() []byte {
+func (b UserBytes[USRDAT]) Trans() []byte {
 	buf := b.buf.Trans()
 	return buf.Bytes()[b.a:b.b]
 }
 
 // Len of slice.
-func (b Bytes) Len() int {
+func (b UserBytes[USRDAT]) Len() int {
 	return b.b - b.a
 }
 
 // Cap of slice.
-func (b Bytes) Cap() (c int) {
-	b.buf.P(func(b *bytes.Buffer) {
+func (b UserBytes[USRDAT]) Cap() (c int) {
+	b.buf.P(func(b *UserBuffer[USRDAT]) {
 		c = b.Cap()
 	})
 	return c
 }
 
 // V use the inner value safely
-func (b Bytes) V(f func([]byte)) {
-	b.buf.P(func(buf *bytes.Buffer) {
+func (b UserBytes[USRDAT]) V(f func([]byte)) {
+	b.buf.P(func(buf *UserBuffer[USRDAT]) {
 		f(buf.Bytes()[b.a:b.b])
 	})
 }
 
 // Copy please refer to Item.Copy().
-func (b Bytes) Copy() (cb Bytes) {
+func (b UserBytes[USRDAT]) Copy() (cb UserBytes[USRDAT]) {
 	cb.buf = b.buf.Copy()
 	cb.a, cb.b = b.a, b.b
 	return
 }
 
 // SliceFrom dat[from:] with Ref.
-func (b Bytes) SliceFrom(from int) Bytes {
-	return Bytes{buf: b.buf, a: b.a + from, b: b.b}
+func (b UserBytes[USRDAT]) SliceFrom(from int) UserBytes[USRDAT] {
+	return UserBytes[USRDAT]{buf: b.buf, a: b.a + from, b: b.b}
 }
 
 // SliceTo dat[:to] with Ref.
-func (b Bytes) SliceTo(to int) Bytes {
-	return Bytes{buf: b.buf, a: b.a, b: b.a + to}
+func (b UserBytes[USRDAT]) SliceTo(to int) UserBytes[USRDAT] {
+	return UserBytes[USRDAT]{buf: b.buf, a: b.a, b: b.a + to}
 }
 
 // Slice dat[from:to] with Ref.
-func (b Bytes) Slice(from, to int) Bytes {
-	return Bytes{buf: b.buf, a: b.a + from, b: b.a + to}
+func (b UserBytes[USRDAT]) Slice(from, to int) UserBytes[USRDAT] {
+	return UserBytes[USRDAT]{buf: b.buf, a: b.a + from, b: b.a + to}
 }
