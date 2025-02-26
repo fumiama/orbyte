@@ -32,14 +32,10 @@ func TestPool(t *testing.T) {
 	wg := sync.WaitGroup{}
 	for i := 0; i < 4096; i++ {
 		item := p.New(i)
-		for j := 0; j < 16; j++ {
-			wg.Add(1)
-			user(item.Ref(), &wg)
-			wg.Add(1)
-			go usernodestroy(item.Copy(), &wg)
-		}
 		wg.Add(1)
-		go usernodestroy(item.Trans(), &wg)
+		go useranddes(item.Copy(), &wg)
+		wg.Add(1)
+		go userv(item.Trans(), &wg)
 	}
 	wg.Wait()
 	runtime.GC()
@@ -50,15 +46,17 @@ func TestPool(t *testing.T) {
 	}
 }
 
-func user(item *Item[[]byte], wg *sync.WaitGroup) {
+func useranddes(item *Item[[]byte], wg *sync.WaitGroup) {
 	defer wg.Done()
-	rand.Read(item.Unwrap())
+	item.V(func(b []byte) {
+		rand.Read(b)
+	})
 	item.ManualDestroy()
 }
 
-func usernodestroy(item *Item[[]byte], wg *sync.WaitGroup) {
+func userv(b []byte, wg *sync.WaitGroup) {
 	defer wg.Done()
-	rand.Read(item.Unwrap())
+	rand.Read(b)
 }
 
 type simplepooler struct{}

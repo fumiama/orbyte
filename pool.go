@@ -77,8 +77,6 @@ func (pool *Pool[T]) put(item *Item[T]) {
 	item.cfg = nil
 
 	item.stat.setdestroyed(true)
-	item.ref = nil
-	item.refc = 0
 
 	if pool.noputbak {
 		return

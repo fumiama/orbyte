@@ -20,38 +20,24 @@ func TestBuffer(t *testing.T) {
 }
 
 func testBuffer(buf *orbyte.Item[bytes.Buffer], t *testing.T) {
-	if buf.Pointer().Len() != 4096 {
-		io.CopyN(buf.Pointer(), rand.Reader, 4096)
-		if buf.Pointer().Len() != 4096 {
-			t.Fatal("got", buf.Pointer().Len())
+	buf.P(func(buf *bytes.Buffer) {
+		if buf.Len() != 4096 {
+			io.CopyN(buf, rand.Reader, 4096)
+			if buf.Len() != 4096 {
+				t.Fatal("got", buf.Len())
+			}
 		}
-	}
-
+	})
 	bufcp := buf.Copy()
-	if bufcp.Pointer().Len() != 4096 {
-		t.Fatal("got", bufcp.Pointer().Len())
-	}
-	if !bytes.Equal(bufcp.Pointer().Bytes(), buf.Pointer().Bytes()) {
-		t.Fatal("unexpected")
-	}
-
-	bufr := buf.Ref()
-	if bufr.Pointer().Len() != 4096 {
-		t.Fatal("got", bufr.Pointer().Len())
-	}
-	if !bytes.Equal(bufr.Pointer().Bytes(), buf.Pointer().Bytes()) {
-		t.Fatal("unexpected")
-	}
-	bufr.ManualDestroy()
-
-	bufcp = bufcp.Trans()
-	if bufcp.Pointer().Len() != 4096 {
-		t.Fatal("got", bufcp.Pointer().Len())
-	}
-	if !bytes.Equal(bufcp.Pointer().Bytes(), buf.Pointer().Bytes()) {
-		t.Fatal("unexpected")
-	}
-	bufcp.ManualDestroy()
+	dat := buf.Trans()
+	bufcp.P(func(bufcp *bytes.Buffer) {
+		if bufcp.Len() != 4096 {
+			t.Fatal("got", bufcp.Len())
+		}
+		if !bytes.Equal(bufcp.Bytes(), dat.Bytes()) {
+			t.Fatal("unexpected")
+		}
+	})
 
 	runtime.GC()
 	runtime.Gosched()

@@ -11,13 +11,6 @@ import (
 	"time"
 )
 
-// manualDestroy please refer to Item.manualDestroy().
-//
-// Only for test purposes.
-func (b Bytes) manualDestroy() {
-	b.buf.ManualDestroy()
-}
-
 // TestBytesSlice sometimes fails at first run because
 // GC not collecting all unused items.
 func TestBytesSlice(t *testing.T) {
@@ -26,27 +19,20 @@ func TestBytesSlice(t *testing.T) {
 		if b.Len() != i {
 			t.Fatal("index", i, "excpet len", i, "but got", b.Len())
 		}
-		rand.Read(b.Bytes())
+		b.V(func(b []byte) {
+			rand.Read(b)
+		})
 		buf := make([]byte, b.Len())
-		copy(buf, b.Bytes())
-		// test normal slice
-		y := b.SliceFrom(5)
-		x := y.SliceTo(i - 5 - 5)
-		if !bytes.Equal(buf[5:i-5], x.Bytes()) {
+		b.V(func(b []byte) {
+			copy(buf, b)
+		})
+		x := b.SliceFrom(5).SliceTo(i - 5 - 5)
+		dat := x.Trans()
+		if !bytes.Equal(buf[5:i-5], dat) {
 			t.Log("exp:", hex.EncodeToString(buf[5:i-5]))
-			t.Log("got:", hex.EncodeToString(x.Bytes()))
+			t.Log("got:", hex.EncodeToString(dat))
 			t.Fatal("index", i, "unexpected")
 		}
-		x.manualDestroy()
-		y.manualDestroy()
-		// test trans slice
-		b = b.Trans().SliceFrom(5).SliceTo(i - 5 - 5)
-		if !bytes.Equal(buf[5:i-5], b.Bytes()) {
-			t.Log("exp:", hex.EncodeToString(buf[5:i-5]))
-			t.Log("got:", hex.EncodeToString(b.Bytes()))
-			t.Fatal("index", i, "unexpected")
-		}
-		b.manualDestroy()
 	}
 	runtime.GC()
 	runtime.Gosched()
@@ -66,11 +52,12 @@ func TestBytesInvolve(t *testing.T) {
 		if b.Len() != i {
 			t.Fatal("index", i, "excpet len", i, "but got", b.Len())
 		}
-		rand.Read(b.Bytes())
-		if !bytes.Equal(b.Bytes(), buf[:i]) {
+		b.V(func(b []byte) {
+			rand.Read(b)
+		})
+		if !bytes.Equal(b.Trans(), buf[:i]) {
 			t.Fatal("index", i, "unexpected")
 		}
-		b.manualDestroy()
 	}
 	runtime.GC()
 	out, in := bufferPool.p.CountItems()
@@ -88,10 +75,9 @@ func TestBytesParse(t *testing.T) {
 		if b.Len() != i {
 			t.Fatal("index", i, "excpet len", i, "but got", b.Len())
 		}
-		if !bytes.Equal(b.Bytes(), buf[:i]) {
+		if !bytes.Equal(b.Trans(), buf[:i]) {
 			t.Fatal("index", i, "unexpected")
 		}
-		b.manualDestroy()
 	}
 	runtime.GC()
 	out, in := bufferPool.p.CountItems()
@@ -111,15 +97,12 @@ func TestBytesCopy(t *testing.T) {
 		if b.Len() != i-10 {
 			t.Fatal("index", i, "excpet len", i, "but got", b.Len())
 		}
-		rand.Read(b.Bytes())
-		// t.Log("org:", hex.EncodeToString(buf[:i]))
-		// t.Log("new:", hex.EncodeToString(b.Bytes()))
-		if bytes.Equal(b.Bytes(), buf[:i]) {
+		b.V(func(b []byte) {
+			rand.Read(b)
+		})
+		if bytes.Equal(b.Trans(), buf[:i]) {
 			t.Fatal("index", i, "unexpected")
 		}
-		b.manualDestroy()
-		x.manualDestroy()
-		a.manualDestroy()
 	}
 	runtime.GC()
 	runtime.Gosched()
@@ -141,15 +124,16 @@ func TestBytesTransMultithread(t *testing.T) {
 			buf := NewBytes(65536)
 			refer := make([]byte, 65536)
 			rand.Read(refer)
-			copy(buf.Bytes(), refer)
+			buf.V(func(b []byte) {
+				copy(b, refer)
+			})
 			wg.Add(1)
-			go func(buf Bytes) {
+			go func(buf []byte) {
 				defer wg.Done()
 				time.Sleep(time.Millisecond * time.Duration(mrand.Intn(10)))
-				if !bytes.Equal(refer, buf.Bytes()) {
+				if !bytes.Equal(refer, buf) {
 					panic("unexpected")
 				}
-				buf.manualDestroy()
 			}(buf.Trans())
 		}()
 	}

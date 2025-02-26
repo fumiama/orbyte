@@ -2,7 +2,6 @@ package pbuf
 
 import (
 	"bytes"
-	"runtime"
 
 	"github.com/fumiama/orbyte"
 )
@@ -10,8 +9,8 @@ import (
 // Bytes wrap pooled buffer into []byte
 // while sharing the same pool.
 type Bytes struct {
-	buf *orbyte.Item[bytes.Buffer]
-	dat []byte
+	buf  *orbyte.Item[bytes.Buffer]
+	a, b int
 }
 
 // BufferItemToBytes convert between *orbyte.Item[bytes.Buffer]
@@ -19,27 +18,43 @@ type Bytes struct {
 //
 // Please notice that Bytes cannnot convert back to
 // *orbyte.Item[bytes.Buffer] again.
-func BufferItemToBytes(buf *orbyte.Item[bytes.Buffer]) Bytes {
-	return Bytes{buf: buf, dat: buf.Pointer().Bytes()}
+func BufferItemToBytes(buf *orbyte.Item[bytes.Buffer]) (b Bytes) {
+	b.buf = buf
+	buf.P(func(buf *bytes.Buffer) {
+		b.b = buf.Len()
+	})
+	return
 }
 
 // NewBytes alloc sz bytes.
-func (bufferPool BufferPool) NewBytes(sz int) Bytes {
+func (bufferPool BufferPool) NewBytes(sz int) (b Bytes) {
 	buf := bufferPool.p.New(sz)
-	return Bytes{buf: buf, dat: buf.Pointer().Bytes()[:sz]}
+	b.buf = buf
+	buf.P(func(buf *bytes.Buffer) {
+		b.b = buf.Len()
+	})
+	return
 }
 
 // InvolveBytes involve outside buf into pool.
-func (bufferPool BufferPool) InvolveBytes(b ...byte) Bytes {
-	buf := bufferPool.p.Involve(len(b), bytes.NewBuffer(b))
-	return Bytes{buf: buf, dat: buf.Pointer().Bytes()[:len(b)]}
+func (bufferPool BufferPool) InvolveBytes(p ...byte) (b Bytes) {
+	buf := bufferPool.p.Involve(len(p), bytes.NewBuffer(p))
+	b.buf = buf
+	buf.P(func(buf *bytes.Buffer) {
+		b.b = buf.Len()
+	})
+	return
 }
 
 // ParseBytes convert outside bytes to Bytes safely
 // without adding it into pool.
-func (bufferPool BufferPool) ParseBytes(b ...byte) Bytes {
-	buf := bufferPool.p.Parse(len(b), bytes.NewBuffer(b))
-	return Bytes{buf: buf, dat: buf.Pointer().Bytes()}
+func (bufferPool BufferPool) ParseBytes(p ...byte) (b Bytes) {
+	buf := bufferPool.p.Parse(len(p), bytes.NewBuffer(p))
+	b.buf = buf
+	buf.P(func(buf *bytes.Buffer) {
+		b.b = buf.Len()
+	})
+	return
 }
 
 // HasInit whether this Bytes is made by pool or
@@ -49,89 +64,49 @@ func (b Bytes) HasInit() bool {
 }
 
 // Trans please refer to Item.Trans().
-func (b Bytes) Trans() (tb Bytes) {
-	tb.buf = b.buf.Trans()
-	tb.dat = b.dat
-	return
+func (b Bytes) Trans() []byte {
+	buf := b.buf.Trans()
+	return buf.Bytes()[b.a:b.b]
 }
 
 // Len of slice.
 func (b Bytes) Len() int {
-	return len(b.dat)
+	return b.b - b.a
 }
 
 // Cap of slice.
-func (b Bytes) Cap() int {
-	return cap(b.dat)
+func (b Bytes) Cap() (c int) {
+	b.buf.P(func(b *bytes.Buffer) {
+		c = b.Cap()
+	})
+	return c
 }
 
-// Bytes is the inner value.
-func (b Bytes) Bytes() []byte {
-	return b.dat
-}
-
-// Ref please refer to Item.Ref().
-func (b Bytes) Ref() (rb Bytes) {
-	rb.buf = b.buf.Ref()
-	rb.dat = b.dat
-	return
+// V use the inner value safely
+func (b Bytes) V(f func([]byte)) {
+	b.buf.P(func(buf *bytes.Buffer) {
+		f(buf.Bytes()[b.a:b.b])
+	})
 }
 
 // Copy please refer to Item.Copy().
 func (b Bytes) Copy() (cb Bytes) {
 	cb.buf = b.buf.Copy()
-	cb.dat = cb.buf.Pointer().Bytes()
+	cb.a, cb.b = b.a, b.b
 	return
 }
 
 // SliceFrom dat[from:] with Ref.
 func (b Bytes) SliceFrom(from int) Bytes {
-	if b.buf.IsTrans() {
-		if b.buf.HasInvolved() {
-			return InvolveBytes(b.dat[from:]...)
-		}
-		return ParseBytes(b.dat[from:]...)
-	}
-	nb := b.Ref()
-	skip(nb.buf.Pointer(), from)
-	nb.dat = b.dat[from:]
-	return nb
+	return Bytes{buf: b.buf, a: b.a + from, b: b.b}
 }
 
 // SliceTo dat[:to] with Ref.
 func (b Bytes) SliceTo(to int) Bytes {
-	if b.buf.IsTrans() {
-		if b.buf.HasInvolved() {
-			return InvolveBytes(b.dat[:to]...)
-		}
-		return ParseBytes(b.dat[:to]...)
-	}
-	nb := b.Ref()
-	nb.buf.Pointer().Truncate(to)
-	nb.dat = b.dat[:to]
-	return nb
+	return Bytes{buf: b.buf, a: b.a, b: b.a + to}
 }
 
 // Slice dat[from:to] with Ref.
 func (b Bytes) Slice(from, to int) Bytes {
-	if b.buf.IsTrans() {
-		if b.buf.HasInvolved() {
-			return InvolveBytes(b.dat[from:to]...)
-		}
-		return ParseBytes(b.dat[from:to]...)
-	}
-	nb := b.Ref()
-	buf := nb.buf.Pointer()
-	skip(buf, from)
-	buf.Truncate(to - from)
-	nb.dat = b.dat[from:to]
-	return nb
-}
-
-// KeepAlive marks Bytes value as reachable.
-func (b Bytes) KeepAlive() {
-	_ = b.buf
-	_ = b.dat
-	runtime.KeepAlive(b.buf)
-	runtime.KeepAlive(b.dat)
+	return Bytes{buf: b.buf, a: b.a + from, b: b.a + to}
 }

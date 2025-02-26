@@ -2,7 +2,6 @@ package orbyte
 
 import (
 	"runtime"
-	"strconv"
 	"sync/atomic"
 )
 
@@ -16,96 +15,59 @@ type Item[T any] struct {
 	cfg  any
 
 	stat status
-	ref  *Item[T]
-	refc int32 // refc -1 means transferred / destroyed
 
 	val T
 }
 
-func (b *Item[T]) incref() {
-	atomic.AddInt32(&b.refc, 1)
-}
-
-func (b *Item[T]) decref() {
-	atomic.AddInt32(&b.refc, -1)
-}
-
-// Trans ownership to a new item and
-// destroy original item immediately.
+// Trans disable inner val being reset by
+// destroy and return a safe copy of val.
 //
-// The value in new item will not be Reset().
+// This method is not thread-safe.
+// Only call once on one item.
+// The item will be destroyed after calling Trans().
 //
-// Call this function to drop your ownership
-// before passing it to another function
-// that is not controlled by you.
-//
-// Avoid to call this function after calling Ref().
-func (b *Item[T]) Trans() (tb *Item[T]) {
+// Use it to drop your ownership
+// before passing val (not its pointer)
+// to another function that is not controlled by you.
+func (b *Item[T]) Trans() T {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
 	}
-	if b.ref != nil {
-		panic("cannot trans ref")
-	}
-	tb = b.pool.newempty()
-	*tb = *b
-	tb.stat = status(atomic.SwapUintptr(
+	val := b.val
+	atomic.StoreUintptr(
 		(*uintptr)(&b.stat), uintptr(destroyedstatus),
-	))
-	tb.refc = 0
-	tb.stat.setintrans(true)
-	b.destroybystat(status(0))
-	return tb
+	)
+	runtime.KeepAlive(b)
+	b.destroybystat(0)
+	return val
 }
 
-// HasInvolved whether this item is buffered.
+// HasInvolved whether this item is buffered
+// and will be Reset on putting back.
 func (b *Item[T]) HasInvolved() bool {
 	return b.stat.isbuffered()
 }
 
-// IsTrans whether this item has been marked as trans.
-func (b *Item[T]) IsTrans() bool {
-	return b.stat.isintrans()
-}
-
-// IsRef whether this item is a reference.
-func (b *Item[T]) IsRef() bool {
-	return b.ref != nil
-}
-
-// Unwrap use value of the item
-func (b *Item[T]) Unwrap() T {
-	if b.stat.hasdestroyed() {
-		panic("use after destroy")
-	}
-	return b.val
-}
-
-// Pointer use pointer value of the item
-func (b *Item[T]) Pointer() *T {
-	if b.stat.hasdestroyed() {
-		panic("use after destroy")
-	}
-	return &b.val
-}
-
-// Ref gens new item without ownership.
+// V use value of the item.
 //
-// It's a safe reference, thus calling this
-// will not destroy the original item
-// comparing with Trans().
-func (b *Item[T]) Ref() (rb *Item[T]) {
+// This operation is safe in function f.
+func (b *Item[T]) V(f func(T)) {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
 	}
-	rb = b.pool.newempty()
-	*rb = *b
-	rb.ref = b
-	rb.refc = 0
-	b.incref()
-	rb.stat.setbuffered(false)
-	rb.stat.setintrans(false)
-	return
+	f(b.val)
+	runtime.KeepAlive(b)
+}
+
+// P use pointer value of the item.
+//
+// This operation is safe in function f.
+func (b *Item[T]) P(f func(*T)) {
+	if b.stat.hasdestroyed() {
+		panic("use after destroy")
+	}
+	f(&b.val)
+	runtime.KeepAlive(b)
 }
 
 // Copy data completely with separated ownership.
@@ -119,21 +81,9 @@ func (b *Item[T]) Copy() (cb *Item[T]) {
 }
 
 func (b *Item[T]) destroybystat(stat status) {
-	if !atomic.CompareAndSwapInt32(&b.refc, 0, -1) {
-		if b.refc < 0 {
-			panic("use imm. after destroy")
-		}
-		panic("cannot destroy: " + strconv.Itoa(int(b.refc)) + " refs remained")
-	}
-	if b.ref != nil {
-		defer b.ref.decref()
-	}
 	switch {
 	case stat.hasdestroyed():
-		panic("use after put back to pool")
-	case stat.isintrans():
-		var v T
-		b.val = v
+		panic("destroy after destroy")
 	case stat.isbuffered():
 		b.pool.pooler.Reset(&b.val)
 	default:
@@ -158,10 +108,10 @@ func (b *Item[T]) ManualDestroy() {
 // Only can call once.
 func (b *Item[T]) setautodestroy() *Item[T] {
 	runtime.SetFinalizer(b, func(item *Item[T]) {
-		// no one is using, no concurrency issue.
 		if item.stat.hasdestroyed() {
 			panic("unexpected hasdestroyed")
 		}
+		// no one is using, no concurrency issue.
 		item.destroybystat(item.stat)
 	})
 	return b
