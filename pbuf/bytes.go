@@ -15,9 +15,6 @@ type UserBytes[USRDAT any] struct {
 
 // BufferItemToBytes convert between *Buffer
 // and Bytes.
-//
-// Please notice that Bytes cannnot convert back to
-// *Buffer again.
 func BufferItemToBytes[USRDAT any](
 	buf *orbyte.Item[UserBuffer[USRDAT]],
 ) (b UserBytes[USRDAT]) {
@@ -26,6 +23,13 @@ func BufferItemToBytes[USRDAT any](
 		b.b = buf.Len()
 	})
 	return
+}
+
+// B directly use inner buf data and USRDAT safely.
+func (b UserBytes[USRDAT]) B(f func([]byte, *USRDAT)) {
+	b.buf.P(func(ub *UserBuffer[USRDAT]) {
+		f(ub.Buffer.Bytes(), &ub.DAT)
+	})
 }
 
 // NewBytes alloc sz bytes.
