@@ -78,6 +78,7 @@ func (bufpooler[USRDAT]) Copy(dst, src *UserBuffer[USRDAT]) {
 	dst.Reset()
 	srccp := *src
 	_, err := io.Copy(dst, &srccp)
+	dst.DAT = srccp.DAT
 	if err != nil {
 		panic(err)
 	}
