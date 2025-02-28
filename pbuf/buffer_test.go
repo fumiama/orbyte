@@ -17,6 +17,22 @@ func TestBuffer(t *testing.T) {
 	testBuffer(InvolveBuffer(bytes.NewBuffer(make([]byte, 0, 8192))), t)
 }
 
+func TestUserBufferCopy(t *testing.T) {
+	p := NewBufferPool[int64]()
+	buf := p.NewBuffer(nil)
+	buf.P(func(ub *UserBuffer[int64]) {
+		ub.DAT = 123456
+		ub.WriteString("0987654321")
+	})
+	cpd := buf.Copy().Trans()
+	if cpd.DAT != 123456 {
+		t.Fatal("exp", 123456, "got", cpd.DAT)
+	}
+	if !bytes.Equal(cpd.Bytes(), []byte("0987654321")) {
+		t.Fail()
+	}
+}
+
 func testBuffer(buf *OBuffer, t *testing.T) {
 	buf.P(func(buf *Buffer) {
 		if buf.Len() != 4096 {
