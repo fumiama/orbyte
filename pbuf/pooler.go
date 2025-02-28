@@ -72,6 +72,8 @@ func (bufpooler[USRDAT]) Reset(item *UserBuffer[USRDAT]) {
 		return
 	}
 	item.Reset()
+	var dat USRDAT
+	item.DAT = dat
 }
 
 func (bufpooler[USRDAT]) Copy(dst, src *UserBuffer[USRDAT]) {
