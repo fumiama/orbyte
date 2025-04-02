@@ -2,6 +2,7 @@ package pbuf
 
 import (
 	"bytes"
+	"runtime"
 
 	"github.com/fumiama/orbyte"
 )
@@ -29,6 +30,7 @@ func BufferItemToBytes[USRDAT any](
 func (b UserBytes[USRDAT]) B(f func([]byte, *USRDAT)) {
 	b.buf.P(func(ub *UserBuffer[USRDAT]) {
 		f(ub.Buffer.Bytes(), &ub.DAT)
+		runtime.KeepAlive(b.buf)
 	})
 }
 
@@ -92,6 +94,7 @@ func (b UserBytes[USRDAT]) Cap() (c int) {
 func (b UserBytes[USRDAT]) V(f func([]byte)) {
 	b.buf.P(func(buf *UserBuffer[USRDAT]) {
 		f(buf.Bytes()[b.a:b.b])
+		runtime.KeepAlive(b.buf)
 	})
 }
 
