@@ -9,8 +9,8 @@ import (
 
 // UserBuffer with customizable user data structure inside.
 type UserBuffer[USRDAT any] struct {
-	bytes.Buffer
 	DAT USRDAT
+	bytes.Buffer
 }
 
 type bufpooler[USRDAT any] struct{}

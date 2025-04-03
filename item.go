@@ -12,9 +12,11 @@ import (
 // You must always use the given methods.
 type Item[T any] struct {
 	pool *Pool[T]
-	cfg  any
-
 	stat status
+	// align 64
+
+	cfg any
+	// align 64
 
 	val T
 }

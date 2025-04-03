@@ -9,10 +9,10 @@ import (
 
 // Pool lightweight general pool.
 type Pool[T any] struct {
-	pooler   Pooler[T]
-	pool     sync.Pool
 	countin  int32
 	countout int32
+	pooler   Pooler[T]
+	pool     sync.Pool
 	noputbak bool
 	manudstr bool
 }
