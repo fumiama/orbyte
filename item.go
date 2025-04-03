@@ -97,9 +97,10 @@ func (b *Item[T]) destroybystat(stat status) {
 
 // ManualDestroy item and put it back to pool.
 //
-// Calling this method without setting pool.SetManualDestroy(true)
-// can probably cause panic.
+// Calling this method only when you're sure that
+// no one will use it, or it will cause a panic.
 func (b *Item[T]) ManualDestroy() {
+	runtime.SetFinalizer(b, nil)
 	b.destroybystat(status(atomic.SwapUintptr(
 		(*uintptr)(&b.stat), uintptr(destroyedstatus),
 	)))
@@ -110,9 +111,6 @@ func (b *Item[T]) ManualDestroy() {
 // Only can call once.
 func (b *Item[T]) setautodestroy() *Item[T] {
 	runtime.SetFinalizer(b, func(item *Item[T]) {
-		if item.stat.hasdestroyed() {
-			panic("unexpected hasdestroyed")
-		}
 		// no one is using, no concurrency issue.
 		item.destroybystat(item.stat)
 	})

@@ -119,3 +119,8 @@ func (b UserBytes[USRDAT]) SliceTo(to int) UserBytes[USRDAT] {
 func (b UserBytes[USRDAT]) Slice(from, to int) UserBytes[USRDAT] {
 	return UserBytes[USRDAT]{buf: b.buf, a: b.a + from, b: b.a + to}
 }
+
+// ManualDestroy please refer to Item.ManualDestroy().
+func (b UserBytes[USRDAT]) ManualDestroy() {
+	b.buf.ManualDestroy()
+}

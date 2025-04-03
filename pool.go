@@ -14,7 +14,6 @@ type Pool[T any] struct {
 	pooler   Pooler[T]
 	pool     sync.Pool
 	noputbak bool
-	manudstr bool
 }
 
 // NewPool make a new pool from custom pooler.
@@ -32,12 +31,6 @@ func NewPool[T any](pooler Pooler[T]) *Pool[T] {
 // Enable this to detect coding errors.
 func (pool *Pool[T]) SetNoPutBack(on bool) {
 	pool.noputbak = on
-}
-
-// SetManualDestroy mark that user must manually
-// run Item.Destroy().
-func (pool *Pool[T]) SetManualDestroy(on bool) {
-	pool.manudstr = on
 }
 
 func (pool *Pool[T]) incin() {
@@ -63,16 +56,11 @@ func (pool *Pool[T]) newempty() *Item[T] {
 	}
 	item.stat = status(0)
 	pool.incout()
-	if !pool.manudstr {
-		item.setautodestroy()
-	}
-	return item
+	return item.setautodestroy()
 }
 
 func (pool *Pool[T]) put(item *Item[T]) {
-	if !pool.manudstr {
-		runtime.SetFinalizer(item, nil)
-	}
+	runtime.SetFinalizer(item, nil)
 
 	item.cfg = nil
 

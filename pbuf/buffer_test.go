@@ -53,6 +53,8 @@ func testBuffer(buf *OBuffer, t *testing.T) {
 		}
 	})
 
+	bufcp.ManualDestroy()
+
 	runtime.GC()
 	runtime.Gosched()
 	runtime.GC()
