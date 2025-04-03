@@ -26,3 +26,7 @@ func (bufferPool BufferPool[USRDAT]) ParseBuffer(
 ) *orbyte.Item[UserBuffer[USRDAT]] {
 	return bufferPool.p.Parse(buf.Len(), buf)
 }
+
+func (bufferPool BufferPool[USRDAT]) CountItems() (outside int32, inside int32) {
+	return bufferPool.p.CountItems()
+}
