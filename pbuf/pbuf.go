@@ -55,3 +55,8 @@ func InvolveBytes(b ...byte) Bytes {
 func ParseBytes(b ...byte) Bytes {
 	return bufferPool.ParseBytes(b...)
 }
+
+// CountItems see Pool.CountItems
+func CountItems() (outside int32, inside int32) {
+	return bufferPool.CountItems()
+}
