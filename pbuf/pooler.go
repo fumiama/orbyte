@@ -67,7 +67,7 @@ func (bufpooler[USRDAT]) Parse(obj any, pooled UserBuffer[USRDAT]) UserBuffer[US
 func (bufpooler[USRDAT]) Reset(item *UserBuffer[USRDAT]) {
 	// See https://golang.org/issue/23199
 	const maxSize = 1 << 16
-	if item.Cap() > maxSize { // drop large buffer
+	if item.Cap() >= maxSize { // drop large buffer
 		*item = UserBuffer[USRDAT]{}
 		return
 	}
