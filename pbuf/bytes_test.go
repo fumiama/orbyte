@@ -94,6 +94,7 @@ func TestBytesCopy(t *testing.T) {
 		a := ParseBytes(buf...)
 		x := a.Slice(5, i-5)
 		b := x.Copy()
+		a.ManualDestroy()
 		if b.Len() != i-10 {
 			t.Fatal("index", i, "excpet len", i, "but got", b.Len())
 		}
