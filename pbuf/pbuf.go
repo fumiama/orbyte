@@ -16,12 +16,12 @@ type (
 )
 
 type BufferPool[USRDAT any] struct {
-	p *orbyte.Pool[UserBuffer[USRDAT]]
+	*orbyte.Pool[UserBuffer[USRDAT]]
 }
 
 func NewBufferPool[USRDAT any]() BufferPool[USRDAT] {
 	return BufferPool[USRDAT]{
-		p: orbyte.NewPool[UserBuffer[USRDAT]](bufpooler[USRDAT]{}),
+		orbyte.NewPool[UserBuffer[USRDAT]](bufpooler[USRDAT]{}),
 	}
 }
 
@@ -59,4 +59,24 @@ func ParseBytes(b ...byte) Bytes {
 // CountItems see Pool.CountItems
 func CountItems() (outside int32, inside int32) {
 	return bufferPool.CountItems()
+}
+
+// SetNoPutBack see Pool.SetNoPutBack
+func SetNoPutBack(on bool) {
+	bufferPool.SetNoPutBack(on)
+}
+
+// SetSyncItem see Pool.SetSyncItem
+func SetSyncItem(on bool) {
+	bufferPool.SetSyncItem(on)
+}
+
+// LimitInput see Pool.LimitInput
+func LimitInput(n int32) {
+	bufferPool.LimitInput(n)
+}
+
+// LimitInput see Pool.LimitOutput
+func LimitOutput(n int32) {
+	bufferPool.LimitOutput(n)
 }

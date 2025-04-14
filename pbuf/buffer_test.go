@@ -59,7 +59,7 @@ func testBuffer(buf *OBuffer, t *testing.T) {
 	runtime.Gosched()
 	runtime.GC()
 
-	out, in := bufferPool.p.CountItems()
+	out, in := bufferPool.CountItems()
 	t.Log(out, in)
 	if out != 0 {
 		t.Fail()

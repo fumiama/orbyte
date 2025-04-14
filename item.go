@@ -35,6 +35,9 @@ func (b *Item[T]) Trans() T {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
 	}
+	if b.pool.issync {
+		b.stat.setinsyncop(true)
+	}
 	val := b.val
 	atomic.StoreUintptr(
 		(*uintptr)(&b.stat), uintptr(destroyedstatus),
@@ -47,6 +50,10 @@ func (b *Item[T]) Trans() T {
 // HasInvolved whether this item is buffered
 // and will be Reset on putting back.
 func (b *Item[T]) HasInvolved() bool {
+	if b.pool.issync {
+		b.stat.setinsyncop(true)
+		defer b.stat.setinsyncop(false)
+	}
 	return b.stat.isbuffered()
 }
 
@@ -56,6 +63,10 @@ func (b *Item[T]) HasInvolved() bool {
 func (b *Item[T]) V(f func(T)) {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
+	}
+	if b.pool.issync {
+		b.stat.setinsyncop(true)
+		defer b.stat.setinsyncop(false)
 	}
 	f(b.val)
 	runtime.KeepAlive(b)
@@ -68,6 +79,10 @@ func (b *Item[T]) P(f func(*T)) {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
 	}
+	if b.pool.issync {
+		b.stat.setinsyncop(true)
+		defer b.stat.setinsyncop(false)
+	}
 	f(&b.val)
 	runtime.KeepAlive(b)
 }
@@ -76,6 +91,10 @@ func (b *Item[T]) P(f func(*T)) {
 func (b *Item[T]) Copy() (cb *Item[T]) {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
+	}
+	if b.pool.issync {
+		b.stat.setinsyncop(true)
+		defer b.stat.setinsyncop(false)
 	}
 	cb = b.pool.New(b.cfg)
 	b.pool.pooler.Copy(&cb.val, &b.val)
@@ -100,6 +119,9 @@ func (b *Item[T]) destroybystat(stat status) {
 // Calling this method only when you're sure that
 // no one will use it, or it will cause a panic.
 func (b *Item[T]) ManualDestroy() {
+	if b.pool.issync {
+		b.stat.setinsyncop(true)
+	}
 	runtime.SetFinalizer(b, nil)
 	b.destroybystat(status(atomic.SwapUintptr(
 		(*uintptr)(&b.stat), uintptr(destroyedstatus),

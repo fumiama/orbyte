@@ -5,6 +5,7 @@ import "sync/atomic"
 const (
 	statusisbuffered = 1 << iota
 	statusdestroyed
+	statusinsyncop
 )
 
 type status uintptr
@@ -38,6 +39,24 @@ func (c *status) setbool(v bool, typ uintptr) {
 	}
 }
 
+// setboolunique panic on non-unique set
+func (c *status) setboolunique(v bool, typ uintptr) {
+	olds := atomic.LoadUintptr((*uintptr)(c))
+	oldv := olds&typ != 0
+	if oldv == v {
+		panic("non-unique operation")
+	}
+	news := status(olds).mask(v, typ)
+	for !atomic.CompareAndSwapUintptr((*uintptr)(c), olds, uintptr(news)) {
+		olds = atomic.LoadUintptr((*uintptr)(c))
+		oldv = olds&typ != 0
+		if oldv == v {
+			panic("non-unique operation")
+		}
+		news = status(olds).mask(v, typ)
+	}
+}
+
 func (c *status) loadbool(typ uintptr) bool {
 	return atomic.LoadUintptr((*uintptr)(c))&typ != 0
 }
@@ -56,4 +75,8 @@ func (c *status) hasdestroyed() bool {
 
 func (c *status) setdestroyed(v bool) {
 	c.setbool(v, statusdestroyed)
+}
+
+func (c *status) setinsyncop(v bool) {
+	c.setboolunique(v, statusinsyncop)
 }

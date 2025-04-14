@@ -36,7 +36,7 @@ func (b UserBytes[USRDAT]) B(f func([]byte, *USRDAT)) {
 
 // NewBytes alloc sz bytes.
 func (bufferPool BufferPool[USRDAT]) NewBytes(sz int) (b UserBytes[USRDAT]) {
-	buf := bufferPool.p.New(sz)
+	buf := bufferPool.New(sz)
 	b.buf = buf
 	buf.P(func(buf *UserBuffer[USRDAT]) {
 		b.b = buf.Len()
@@ -46,7 +46,7 @@ func (bufferPool BufferPool[USRDAT]) NewBytes(sz int) (b UserBytes[USRDAT]) {
 
 // InvolveBytes involve outside buf into pool.
 func (bufferPool BufferPool[USRDAT]) InvolveBytes(p ...byte) (b UserBytes[USRDAT]) {
-	buf := bufferPool.p.Involve(len(p), bytes.NewBuffer(p))
+	buf := bufferPool.Involve(len(p), bytes.NewBuffer(p))
 	b.buf = buf
 	buf.P(func(buf *UserBuffer[USRDAT]) {
 		b.b = buf.Len()
@@ -57,7 +57,7 @@ func (bufferPool BufferPool[USRDAT]) InvolveBytes(p ...byte) (b UserBytes[USRDAT
 // ParseBytes convert outside bytes to Bytes safely
 // without adding it into pool.
 func (bufferPool BufferPool[USRDAT]) ParseBytes(p ...byte) (b UserBytes[USRDAT]) {
-	buf := bufferPool.p.Parse(len(p), bytes.NewBuffer(p))
+	buf := bufferPool.Parse(len(p), bytes.NewBuffer(p))
 	b.buf = buf
 	buf.P(func(buf *UserBuffer[USRDAT]) {
 		b.b = buf.Len()

@@ -37,7 +37,7 @@ func TestBytesSlice(t *testing.T) {
 	runtime.GC()
 	runtime.Gosched()
 	runtime.GC()
-	out, in := bufferPool.p.CountItems()
+	out, in := bufferPool.CountItems()
 	t.Log(out, in)
 	if out != 0 {
 		t.Fail()
@@ -60,7 +60,7 @@ func TestBytesInvolve(t *testing.T) {
 		}
 	}
 	runtime.GC()
-	out, in := bufferPool.p.CountItems()
+	out, in := bufferPool.CountItems()
 	t.Log(out, in)
 	if out != 0 {
 		t.Fail()
@@ -80,7 +80,7 @@ func TestBytesParse(t *testing.T) {
 		}
 	}
 	runtime.GC()
-	out, in := bufferPool.p.CountItems()
+	out, in := bufferPool.CountItems()
 	t.Log(out, in)
 	if out != 0 {
 		t.Fail()
@@ -107,7 +107,7 @@ func TestBytesCopy(t *testing.T) {
 	runtime.GC()
 	runtime.Gosched()
 	runtime.GC()
-	out, in := bufferPool.p.CountItems()
+	out, in := bufferPool.CountItems()
 	t.Log(out, in)
 	if out != 0 {
 		t.Fail()

@@ -21,6 +21,7 @@ type Pool[T any] struct {
 	pooler Pooler[T]
 
 	noputbak bool
+	issync   bool
 }
 
 // NewPool make a new pool from custom pooler.
@@ -41,6 +42,13 @@ func NewPool[T any](pooler Pooler[T]) *Pool[T] {
 // Enable this to detect coding errors.
 func (pool *Pool[T]) SetNoPutBack(on bool) {
 	pool.noputbak = on
+}
+
+// SetSyncItem make it panic on every read-write conflict.
+//
+// Enable this to detect coding errors.
+func (pool *Pool[T]) SetSyncItem(on bool) {
+	pool.issync = on
 }
 
 // LimitOutput will automatically set new item no-autodestroy
