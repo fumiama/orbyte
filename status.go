@@ -1,6 +1,11 @@
 package orbyte
 
-import "sync/atomic"
+import (
+	"runtime"
+	"strconv"
+	"strings"
+	"sync/atomic"
+)
 
 const (
 	statusisbuffered = 1 << iota
@@ -16,6 +21,16 @@ func init() {
 	destroyedstatus.setdestroyed(true)
 }
 
+func getGoroutineID() int64 {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(string(buf[:n]))[1]
+	id, err := strconv.ParseInt(idField, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
 func (c status) mask(v bool, typ uintptr) (news status) {
 	news = c
 	if v {
@@ -39,22 +54,23 @@ func (c *status) setbool(v bool, typ uintptr) {
 	}
 }
 
-// setboolunique panic on non-unique set
-func (c *status) setboolunique(v bool, typ uintptr) {
+// setboolunique return false on non-unique set
+func (c *status) setboolunique(v bool, typ uintptr) bool {
 	olds := atomic.LoadUintptr((*uintptr)(c))
 	oldv := olds&typ != 0
 	if oldv == v {
-		panic("non-unique operation")
+		return false
 	}
 	news := status(olds).mask(v, typ)
 	for !atomic.CompareAndSwapUintptr((*uintptr)(c), olds, uintptr(news)) {
 		olds = atomic.LoadUintptr((*uintptr)(c))
 		oldv = olds&typ != 0
 		if oldv == v {
-			panic("non-unique operation")
+			return false
 		}
 		news = status(olds).mask(v, typ)
 	}
+	return true
 }
 
 func (c *status) loadbool(typ uintptr) bool {
@@ -77,6 +93,6 @@ func (c *status) setdestroyed(v bool) {
 	c.setbool(v, statusdestroyed)
 }
 
-func (c *status) setinsyncop(v bool) {
-	c.setboolunique(v, statusinsyncop)
+func (c *status) setinsyncop(v bool) bool {
+	return c.setboolunique(v, statusinsyncop)
 }

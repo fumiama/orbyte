@@ -18,6 +18,10 @@ type Item[T any] struct {
 	cfg any
 	// align 64
 
+	// id only take effect on issync = True
+	id int64
+	// align 64
+
 	val T
 }
 
@@ -36,7 +40,9 @@ func (b *Item[T]) Trans() T {
 		panic("use after destroy")
 	}
 	if b.pool.issync {
-		b.stat.setinsyncop(true)
+		if !b.stat.setinsyncop(true) {
+			panic("non-unique op")
+		}
 	}
 	val := b.val
 	atomic.StoreUintptr(
@@ -51,7 +57,10 @@ func (b *Item[T]) Trans() T {
 // and will be Reset on putting back.
 func (b *Item[T]) HasInvolved() bool {
 	if b.pool.issync {
-		b.stat.setinsyncop(true)
+		if !b.stat.setinsyncop(true) && getGoroutineID() != b.id {
+			panic("non-unique op")
+		}
+		atomic.StoreInt64(&b.id, getGoroutineID())
 		defer b.stat.setinsyncop(false)
 	}
 	return b.stat.isbuffered()
@@ -65,7 +74,10 @@ func (b *Item[T]) V(f func(T)) {
 		panic("use after destroy")
 	}
 	if b.pool.issync {
-		b.stat.setinsyncop(true)
+		if !b.stat.setinsyncop(true) && getGoroutineID() != b.id {
+			panic("non-unique op")
+		}
+		atomic.StoreInt64(&b.id, getGoroutineID())
 		defer b.stat.setinsyncop(false)
 	}
 	f(b.val)
@@ -80,7 +92,10 @@ func (b *Item[T]) P(f func(*T)) {
 		panic("use after destroy")
 	}
 	if b.pool.issync {
-		b.stat.setinsyncop(true)
+		if !b.stat.setinsyncop(true) && getGoroutineID() != b.id {
+			panic("non-unique op")
+		}
+		atomic.StoreInt64(&b.id, getGoroutineID())
 		defer b.stat.setinsyncop(false)
 	}
 	f(&b.val)
@@ -93,7 +108,10 @@ func (b *Item[T]) Copy() (cb *Item[T]) {
 		panic("use after destroy")
 	}
 	if b.pool.issync {
-		b.stat.setinsyncop(true)
+		if !b.stat.setinsyncop(true) && getGoroutineID() != b.id {
+			panic("non-unique op")
+		}
+		atomic.StoreInt64(&b.id, getGoroutineID())
 		defer b.stat.setinsyncop(false)
 	}
 	cb = b.pool.New(b.cfg)
