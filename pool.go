@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+
+	"github.com/RomiChan/syncx"
 )
 
 // Pool lightweight general pool.
@@ -18,6 +20,7 @@ type Pool[T any] struct {
 	// 64 bit align
 
 	pool   sync.Pool
+	dupmap syncx.Map[*Item[T], struct{}]
 	pooler Pooler[T]
 
 	noputbak bool
@@ -90,6 +93,7 @@ func (pool *Pool[T]) newempty() *Item[T] {
 	isrecycled := item.stat.hasdestroyed()
 	if isrecycled {
 		pool.decin()
+		pool.dupmap.Delete(item)
 	}
 	item.stat = status(0)
 	isfull := atomic.LoadInt32(&pool.countin) > pool.inlim ||
@@ -113,6 +117,12 @@ func (pool *Pool[T]) put(item *Item[T]) {
 		atomic.LoadInt32(&pool.countin) > pool.inlim {
 		return
 	}
+
+	_, exist := pool.dupmap.LoadOrStore(item, struct{}{})
+	if exist {
+		panic("duplicated put")
+	}
+
 	pool.pool.Put(item)
 
 	pool.decout()
