@@ -138,12 +138,7 @@ func (b *Item[T]) destroybystat(stat status) {
 		var v T
 		b.val = v
 	}
-	if stat.hasignored() { // ignore put
-		runtime.SetFinalizer(b, nil)
-		b.cfg = nil
-		return
-	}
-	b.pool.put(b)
+	b.pool.put(b, stat.hasignored())
 }
 
 // ManualDestroy item and put it back to pool.

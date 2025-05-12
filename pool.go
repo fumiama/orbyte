@@ -106,7 +106,7 @@ func (pool *Pool[T]) newempty() *Item[T] {
 	return item.setautodestroy()
 }
 
-func (pool *Pool[T]) put(item *Item[T]) {
+func (pool *Pool[T]) put(item *Item[T], hasignore bool) {
 	runtime.SetFinalizer(item, nil)
 
 	item.cfg = nil
@@ -118,15 +118,17 @@ func (pool *Pool[T]) put(item *Item[T]) {
 		return
 	}
 
-	_, exist := pool.dupmap.LoadOrStore(item, struct{}{})
-	if exist {
-		panic("duplicated put")
+	if !hasignore {
+		_, exist := pool.dupmap.LoadOrStore(item, struct{}{})
+		if exist {
+			panic("duplicated put")
+		}
+
+		pool.pool.Put(item)
+		pool.incin()
 	}
 
-	pool.pool.Put(item)
-
 	pool.decout()
-	pool.incin()
 }
 
 // New call this to generate an item.
