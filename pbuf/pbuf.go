@@ -45,6 +45,11 @@ func NewBytes(sz int) Bytes {
 	return bufferPool.NewBytes(sz)
 }
 
+// NewBytes alloc sz bytes without involving.
+func NewLargeBytes(sz int) Bytes {
+	return bufferPool.NewLargeBytes(sz)
+}
+
 // InvolveBytes involve outside buf into pool.
 func InvolveBytes(b ...byte) Bytes {
 	return bufferPool.InvolveBytes(b...)
