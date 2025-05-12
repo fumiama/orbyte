@@ -75,6 +75,12 @@ func (bufferPool BufferPool[USRDAT]) ParseBytes(p ...byte) (b UserBytes[USRDAT])
 	return
 }
 
+// Ignore refer to Item.Ignore
+func (b UserBytes[USRDAT]) Ignore(from int) UserBytes[USRDAT] {
+	b.buf.Ignore()
+	return b
+}
+
 // HasInit whether this Bytes is made by pool or
 // just declared.
 func (b UserBytes[USRDAT]) HasInit() bool {
