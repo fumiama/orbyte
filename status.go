@@ -11,6 +11,7 @@ const (
 	statusisbuffered = 1 << iota
 	statusdestroyed
 	statusinsyncop
+	statushasignored
 )
 
 type status uintptr
@@ -95,4 +96,12 @@ func (c *status) setdestroyed(v bool) {
 
 func (c *status) setinsyncop(v bool) bool {
 	return c.setboolunique(v, statusinsyncop)
+}
+
+func (c *status) hasignored() bool {
+	return c.loadbool(statushasignored)
+}
+
+func (c *status) setignored(v bool) {
+	c.setbool(v, statushasignored)
 }

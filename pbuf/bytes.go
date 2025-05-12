@@ -44,6 +44,16 @@ func (bufferPool BufferPool[USRDAT]) NewBytes(sz int) (b UserBytes[USRDAT]) {
 	return
 }
 
+// NewLargeBytes alloc sz bytes without involving.
+func (bufferPool BufferPool[USRDAT]) NewLargeBytes(sz int) (b UserBytes[USRDAT]) {
+	buf := bufferPool.New(sz).Ignore()
+	b.buf = buf
+	buf.P(func(buf *UserBuffer[USRDAT]) {
+		b.b = buf.Len()
+	})
+	return
+}
+
 // InvolveBytes involve outside buf into pool.
 func (bufferPool BufferPool[USRDAT]) InvolveBytes(p ...byte) (b UserBytes[USRDAT]) {
 	buf := bufferPool.Involve(len(p), bytes.NewBuffer(p))

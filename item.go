@@ -25,6 +25,13 @@ type Item[T any] struct {
 	val T
 }
 
+// Ignore marks Item to be independent and will not be
+// put back.
+func (b *Item[T]) Ignore() *Item[T] {
+	b.stat.setignored(true)
+	return b
+}
+
 // Trans disable inner val being reset by
 // destroy and return a safe copy of val.
 //
@@ -69,7 +76,7 @@ func (b *Item[T]) HasInvolved() bool {
 // V use value of the item.
 //
 // This operation is safe in function f.
-func (b *Item[T]) V(f func(T)) {
+func (b *Item[T]) V(f func(T)) *Item[T] {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
 	}
@@ -82,12 +89,13 @@ func (b *Item[T]) V(f func(T)) {
 	}
 	f(b.val)
 	runtime.KeepAlive(b)
+	return b
 }
 
 // P use pointer value of the item.
 //
 // This operation is safe in function f.
-func (b *Item[T]) P(f func(*T)) {
+func (b *Item[T]) P(f func(*T)) *Item[T] {
 	if b.stat.hasdestroyed() {
 		panic("use after destroy")
 	}
@@ -100,6 +108,7 @@ func (b *Item[T]) P(f func(*T)) {
 	}
 	f(&b.val)
 	runtime.KeepAlive(b)
+	return b
 }
 
 // Copy data completely with separated ownership.
@@ -128,6 +137,11 @@ func (b *Item[T]) destroybystat(stat status) {
 	default:
 		var v T
 		b.val = v
+	}
+	if stat.hasignored() { // ignore put
+		runtime.SetFinalizer(b, nil)
+		b.cfg = nil
+		return
 	}
 	b.pool.put(b)
 }

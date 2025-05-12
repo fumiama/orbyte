@@ -2,6 +2,9 @@ linters-settings:
   errcheck:
     ignore: fmt:.*,io/ioutil:^Read.*
     ignoretests: true
+    exclude-functions:
+      - (*github.com/fumiama/orbyte.Item).V
+      - (*github.com/fumiama/orbyte.Item).P
 
   goimports:
     local-prefixes: github.com/fumiama/orbyte
