@@ -10,6 +10,7 @@ import (
 var bufferPool = NewBufferPool[struct{}]()
 
 type (
+	Pool    = BufferPool[struct{}]
 	OBuffer = orbyte.Item[Buffer]
 	Buffer  = UserBuffer[struct{}]
 	Bytes   = UserBytes[struct{}]
@@ -17,6 +18,11 @@ type (
 
 type BufferPool[USRDAT any] struct {
 	*orbyte.Pool[UserBuffer[USRDAT]]
+}
+
+// GetDefaultBufferPool exposes inner bufferPool value.
+func GetDefaultBufferPool() Pool {
+	return bufferPool
 }
 
 func NewBufferPool[USRDAT any]() BufferPool[USRDAT] {
