@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"reflect"
-	"unsafe"
 )
 
 // UserBuffer with customizable user data structure inside.
@@ -19,7 +18,6 @@ func (bufpooler[USRDAT]) New(config any, pooled UserBuffer[USRDAT]) UserBuffer[U
 	switch c := config.(type) {
 	case int:
 		pooled.Grow(c)
-		*(*[]byte)(unsafe.Pointer(&pooled)) = pooled.Bytes()[:c]
 		if c != pooled.Len() {
 			panic("unexpected bad buffer Grow")
 		}
